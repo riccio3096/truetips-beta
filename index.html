@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#5B2A86"/>
+<title>TrueTips — Beta</title>
+<style>
+:root{--p:#5B2A86;--y:#F5C518;--dk:#1F1B2E;--mu:#6E6A82;--bg:#FAF9F6;--sf:#fff;--bo:#E5E1D8;--ok:#1FB873;--okbg:#E8F8EF;--lp:#EEE8F8;--red:#E14A4A}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;background:#111}
+button{font-family:inherit;border:none;background:none;cursor:pointer;color:inherit}
+input,textarea{font-family:inherit;border:none;outline:none;background:none;color:inherit}
+
+/* frame */
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#2a2540,#0a0a0a);padding:20px}
+.device{width:390px;height:844px;background:#1a1a1a;border-radius:54px;padding:11px;box-shadow:0 25px 80px rgba(0,0,0,.7),inset 0 0 0 1px #333;position:relative;flex-shrink:0}
+.device::before{content:"";position:absolute;left:50%;top:14px;transform:translateX(-50%);width:120px;height:34px;background:#000;border-radius:20px;z-index:1000;pointer-events:none}
+.screen{width:100%;height:100%;background:var(--bg);border-radius:43px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+@media(max-width:480px),(max-height:900px){
+  .stage{padding:0}.device{width:100vw;height:100dvh;border-radius:0;padding:0;box-shadow:none}
+  .device::before{display:none}.screen{border-radius:0}
+}
+
+/* views */
+.view{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden;background:var(--bg)}
+.view.on{display:flex}
+
+/* status bar */
+.sb{height:52px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 28px 8px;font-size:15px;font-weight:600;flex-shrink:0}
+.sb.dark{background:var(--p);color:#fff}.sb.light{background:transparent;color:var(--dk)}
+.sb.green{background:var(--ok);color:#fff}
+.sb .r{display:flex;gap:5px;align-items:center;font-size:13px}
+
+/* header */
+.hdr{display:flex;align-items:center;gap:12px;padding:12px 20px;background:var(--p);color:#fff;flex-shrink:0}
+.hdr h1{flex:1;font-size:17px;font-weight:700}
+.hdr svg{width:24px;height:24px;cursor:pointer;flex-shrink:0}
+
+/* bottom nav */
+.nav{height:74px;display:flex;align-items:center;background:#fff;border-top:1px solid var(--bo);padding-bottom:env(safe-area-inset-bottom,8px);flex-shrink:0}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:#bbb;padding:8px 4px;cursor:pointer}
+.nav-item.on{color:var(--p)}
+.nav-item svg{width:24px;height:24px}
+.fab{width:56px;height:56px;border-radius:50%;background:var(--y);display:flex;align-items:center;justify-content:center;margin-top:-20px;cursor:pointer;box-shadow:0 4px 12px rgba(91,42,134,.3);flex-shrink:0;border:3px solid #fff}
+.fab svg{width:26px;height:26px}
+
+/* scroll */
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.scroll::-webkit-scrollbar{display:none}
+
+/* buttons */
+.btn{width:100%;padding:15px;border-radius:50px;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-p{background:var(--p);color:#fff}
+.btn-s{background:transparent;border:2px solid var(--p);color:var(--p)}
+.btn-y{background:var(--y);color:var(--p)}
+
+/* form */
+.finp{width:100%;border:2px solid var(--bo);border-radius:14px;padding:14px 16px;font-size:16px;color:var(--dk);background:#fff;margin-bottom:14px}
+.finp:focus{border-color:var(--p)}
+.flbl{font-size:13px;font-weight:600;color:var(--mu);margin-bottom:6px}
+
+/* cards */
+.card{background:#fff;border-radius:16px;border:1px solid var(--bo);overflow:hidden;margin:12px 16px}
+
+/* badge */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}
+.badge.ok{background:var(--okbg);color:var(--ok)}
+.badge.qr{background:var(--lp);color:var(--p)}
+
+/* stars */
+.stars{color:var(--y);font-size:14px;letter-spacing:1px}
+.stars.lg{font-size:32px;cursor:pointer}
+
+/* avatar */
+.av{width:36px;height:36px;border-radius:50%;background:var(--lp);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--p);flex-shrink:0}
+
+/* chip */
+.chip{padding:8px 16px;border-radius:20px;border:2px solid var(--bo);font-size:13px;font-weight:500;color:var(--mu);cursor:pointer;white-space:nowrap}
+.chip.on{border-color:var(--p);background:var(--lp);color:var(--p)}
+
+/* ─── MAP SCREEN ─── */
+.map-bg{flex:1;position:relative;background:#e8f0e8;overflow:hidden}
+.map-svg{position:absolute;inset:0;width:100%;height:100%}
+.map-sheet{position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;padding:14px 16px 0;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
+.handle{width:36px;height:5px;background:#E0E0E0;border-radius:3px;margin:0 auto 12px}
+.venue-row{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #F5F3FF;cursor:pointer}
+.venue-ico{width:48px;height:48px;border-radius:14px;background:var(--lp);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.venue-ico svg{width:26px;height:26px;color:var(--p)}
+
+/* ─── FEED ─── */
+.feed-img{height:180px;background:var(--lp);display:flex;align-items:center;justify-content:center}
+.feed-img svg{width:64px;height:64px;color:var(--p);opacity:.4}
+
+/* ─── WALLET ─── */
+.wallet-hero{background:var(--p);padding:24px 20px 20px;color:#fff}
+.progress{height:7px;background:rgba(255,255,255,.2);border-radius:20px;margin:10px 0 4px}
+.prog-fill{height:100%;border-radius:20px;background:var(--y)}
+.reward-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #F5F3FF}
+.reward-ico{width:44px;height:44px;border-radius:12px;background:var(--lp);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.reward-ico svg{width:22px;height:22px;color:var(--p)}
+
+/* ─── PROFILE ─── */
+.prof-hero{background:var(--p);padding:30px 20px 20px;color:#fff;text-align:center}
+.prof-av{width:80px;height:80px;border-radius:50%;background:var(--y);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:30px;color:var(--p);margin:0 auto 12px;border:3px solid rgba(255,255,255,.3)}
+.stat-row{display:flex;justify-content:space-around;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.15)}
+.stat-n{font-size:20px;font-weight:700}
+.stat-l{font-size:11px;opacity:.7;margin-top:2px}
+.ptab-bar{display:flex;background:#fff;border-bottom:1px solid var(--bo)}
+.ptab{flex:1;padding:13px;text-align:center;font-size:13px;font-weight:600;color:#999;cursor:pointer;border-bottom:3px solid transparent}
+.ptab.on{color:var(--p);border-bottom-color:var(--p)}
+.badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:20px}
+.badge-item{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.badge-circle{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.badge-circle svg{width:28px;height:28px}
+.badge-nm{font-size:12px;font-weight:600;color:var(--dk)}
+
+/* ─── QR SCANNER ─── */
+.qr-wrap{flex:1;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:30px}
+.qr-frame{width:220px;height:220px;position:relative;display:flex;align-items:center;justify-content:center}
+.qr-corner{position:absolute;width:24px;height:24px;border-color:var(--y);border-style:solid}
+.qr-corner.tl{top:0;left:0;border-width:4px 0 0 4px;border-radius:4px 0 0 0}
+.qr-corner.tr{top:0;right:0;border-width:4px 4px 0 0;border-radius:0 4px 0 0}
+.qr-corner.bl{bottom:0;left:0;border-width:0 0 4px 4px;border-radius:0 0 0 4px}
+.qr-corner.br{bottom:0;right:0;border-width:0 4px 4px 0;border-radius:0 0 4px 0}
+.qr-tip{color:rgba(255,255,255,.7);font-size:14px;text-align:center;line-height:1.5}
+.qr-tip strong{color:#fff}
+.scan-line{width:180px;height:3px;background:linear-gradient(90deg,transparent,var(--y),transparent);border-radius:2px;animation:scan 2s ease-in-out infinite}
+@keyframes scan{0%,100%{transform:translateY(-80px)}50%{transform:translateY(80px)}}
+
+/* ─── CHECKIN ─── */
+.ci-ring{width:110px;height:110px;border-radius:50%;background:var(--okbg);border:4px solid var(--ok);display:flex;align-items:center;justify-content:center}
+
+/* spacing helpers */
+.p16{padding:16px}.p20{padding:20px}
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt20{margin-top:20px}
+.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}
+.row{display:flex;align-items:center;gap:10px}
+.col{display:flex;flex-direction:column}
+.f1{flex:1}
+.txt-p{color:var(--p)}.txt-ok{color:var(--ok)}.txt-mu{color:var(--mu)}
+.txt-dk{color:var(--dk)}.fw7{font-weight:700}.fw6{font-weight:600}
+.fs13{font-size:13px}.fs14{font-size:14px}.fs15{font-size:15px}.fs16{font-size:16px}.fs18{font-size:18px}.fs22{font-size:22px}.fs32{font-size:32px}
+.center{text-align:center}
+.divider{height:1px;background:var(--bo);margin:0 16px}
+.section-ttl{font-size:14px;font-weight:700;color:var(--mu);padding:12px 16px 6px;letter-spacing:.5px}
+</style>
+</head>
+<body>
+<div class="stage"><div class="device"><div class="screen" id="root">
+
+<!-- SVG ICONS defs -->
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="ic-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12L12 3l9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9"/></symbol>
+<symbol id="ic-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21c0 0-8-6-8-12a8 8 0 0116 0c0 6-8 12-8 12z"/><circle cx="12" cy="9" r="2.5"/></symbol>
+<symbol id="ic-feed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+<symbol id="ic-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z"/><circle cx="16" cy="14" r="1.5" fill="currentColor" stroke="none"/></symbol>
+<symbol id="ic-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></symbol>
+<symbol id="ic-qr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h2v2h-2zm4 0h3v2h-3zm0 4h3v3h-3zm-4 2h2v3h-2zm2-2h2v2h-2z"/></symbol>
+<symbol id="ic-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></symbol>
+<symbol id="ic-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></symbol>
+<symbol id="ic-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></symbol>
+<symbol id="ic-fork" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 2v7c0 2.8 2.2 5 5 5v8M21 2v4a4 4 0 01-4 4v9M12 2v20"/></symbol>
+<symbol id="ic-coffee" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 8h2a2 2 0 010 4h-2M3 8h14v9a4 4 0 01-4 4H7a4 4 0 01-4-4z"/></symbol>
+<symbol id="ic-pizza" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2C6.5 2 2 6.5 2 12c0 5.5 9 19 10 10 1-9 8-5 10-10 0-5.5-4.5-10-10-10z"/></symbol>
+<symbol id="ic-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></symbol>
+<symbol id="ic-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z"/></symbol>
+<symbol id="ic-msg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></symbol>
+<symbol id="ic-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></symbol>
+<symbol id="ic-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5" rx="1"/><path d="M12 22V7m0 0H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zm0 0h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></symbol>
+<symbol id="ic-star" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></symbol>
+<symbol id="ic-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+<symbol id="ic-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 21h8M12 17v4M5 3H3v5a4 4 0 004 4m12-9h2v5a4 4 0 01-4 4M7 12a5 5 0 0010 0V3H7z"/></symbol>
+<symbol id="ic-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3.1-8.7A2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 2 .7 2.9a2 2 0 01-.4 2.1L8 10a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.5c.9.3 1.9.6 2.9.7a2 2 0 011.7 2.1z"/></symbol>
+<symbol id="ic-nav" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l19-9-9 19-2-8-8-2z"/></symbol>
+<symbol id="ic-photo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
+<symbol id="ic-discount" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3l1.5 9m3.5-9l-1.5 9M3 9c0 7 4.5 11 9 12 4.5-1 9-5 9-12"/></symbol>
+</defs></svg>
+
+<!-- ═══════════════ SPLASH ═══════════════ -->
+<div class="view on" id="v-splash" style="background:var(--p);align-items:center;justify-content:center;gap:20px;cursor:pointer" onclick="go('v-onb')">
+  <div style="width:90px;height:90px;background:var(--y);border-radius:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:38px;color:var(--p);letter-spacing:-2px">tt</div>
+  <div class="center"><div style="font-size:30px;font-weight:800;color:#fff;letter-spacing:-1px">TrueTips</div><div style="font-size:16px;color:rgba(255,255,255,.65);margin-top:6px;font-style:italic">Sicuramente dai migliori.</div></div>
+  <div style="position:absolute;bottom:70px;display:flex;flex-direction:column;align-items:center;gap:12px">
+    <div style="font-size:14px;color:rgba(255,255,255,.6);letter-spacing:.5px">Tocca per iniziare</div>
+    <div style="width:40px;height:5px;background:rgba(255,255,255,.3);border-radius:3px;animation:pulse 1.4s ease-in-out infinite"></div>
+  </div>
+  <style>@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}</style>
+</div>
+
+<!-- ═══════════════ ONBOARDING ═══════════════ -->
+<div class="view" id="v-onb" style="background:#fff">
+  <div id="ob-slides" style="flex:1;position:relative;overflow:hidden">
+    <div class="ob-sl" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:40px;opacity:1;transition:opacity .3s">
+      <div style="width:120px;height:120px;background:var(--lp);border-radius:36px;display:flex;align-items:center;justify-content:center"><svg width="64" height="64" style="color:var(--p)"><use href="#ic-map"/></svg></div>
+      <div class="center"><div class="fs22 fw7 txt-dk mb8">Solo recensioni vere</div><div class="fs14 txt-mu" style="line-height:1.6">Puoi recensire un locale solo se sei stato lì davvero. Niente più fake reviews.</div></div>
+    </div>
+    <div class="ob-sl" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:40px;opacity:0;transition:opacity .3s">
+      <div style="width:120px;height:120px;background:var(--lp);border-radius:36px;display:flex;align-items:center;justify-content:center"><svg width="64" height="64" style="color:var(--p)"><use href="#ic-qr"/></svg></div>
+      <div class="center"><div class="fs22 fw7 txt-dk mb8">Presenza verificata</div><div class="fs14 txt-mu" style="line-height:1.6">GPS o QR code: il sistema certifica la tua visita in modo automatico e sicuro.</div></div>
+    </div>
+    <div class="ob-sl" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:40px;opacity:0;transition:opacity .3s">
+      <div style="width:120px;height:120px;background:var(--lp);border-radius:36px;display:flex;align-items:center;justify-content:center"><svg width="64" height="64" style="color:var(--p)"><use href="#ic-trophy"/></svg></div>
+      <div class="center"><div class="fs22 fw7 txt-dk mb8">Guadagna premi</div><div class="fs14 txt-mu" style="line-height:1.6">Ogni recensione ti dà TruePoints. Sali di livello e riscatta sconti e gift card.</div></div>
+    </div>
+    <div class="ob-sl" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:40px;opacity:0;transition:opacity .3s">
+      <div style="width:120px;height:120px;background:var(--lp);border-radius:36px;display:flex;align-items:center;justify-content:center"><svg width="64" height="64" style="color:var(--p)"><use href="#ic-user"/></svg></div>
+      <div class="center"><div class="fs22 fw7 txt-dk mb8">Community affidabile</div><div class="fs14 txt-mu" style="line-height:1.6">Segui reviewer reali, scopri i loro posti e condividi le tue esperienze certificate.</div></div>
+    </div>
+  </div>
+  <div style="padding:20px 24px 40px">
+    <div id="ob-dots" style="display:flex;gap:8px;justify-content:center;margin-bottom:20px">
+      <div class="od on"></div><div class="od"></div><div class="od"></div><div class="od"></div>
+    </div>
+    <style>.od{width:8px;height:8px;border-radius:50%;background:#ddd;transition:all .3s}.od.on{background:var(--p);width:22px;border-radius:4px}</style>
+    <button class="btn btn-p" id="ob-next" onclick="nextOb()">Continua</button>
+    <div style="text-align:center;margin-top:12px"><span style="font-size:14px;color:var(--mu);cursor:pointer" onclick="go('v-login')">Salta</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════ LOGIN ═══════════════ -->
+<div class="view" id="v-login">
+  <div class="sb light"></div>
+  <div class="scroll p20">
+    <div class="center mt16 mb8"><div style="width:60px;height:60px;background:var(--y);border-radius:18px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:26px;color:var(--p);letter-spacing:-1px">tt</div></div>
+    <div class="center mb8"><div class="fs22 fw7 txt-dk">Accedi a TrueTips</div></div>
+    <div style="margin:20px 0">
+      <button onclick="go('v-map')" style="width:100%;padding:14px;border-radius:14px;border:2px solid var(--bo);background:#fff;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;cursor:pointer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Continua con Google
+      </button>
+      <button onclick="go('v-map')" style="width:100%;padding:14px;border-radius:14px;border:2px solid var(--bo);background:#000;color:#fff;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;cursor:pointer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+        Continua con Apple
+      </button>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--mu);font-size:13px">
+      <div style="flex:1;height:1px;background:var(--bo)"></div>oppure<div style="flex:1;height:1px;background:var(--bo)"></div>
+    </div>
+    <div class="mb8"><div class="flbl">Email</div><input class="finp" placeholder="email@esempio.com" type="email"></div>
+    <div class="mb8"><div class="flbl">Password</div><input class="finp" placeholder="••••••••" type="password"></div>
+    <button class="btn btn-p mt8" onclick="go('v-map')">Accedi</button>
+    <div class="center mt12 fs13 txt-mu">Non hai un account? <span class="txt-p fw6" onclick="go('v-map')" style="cursor:pointer">Registrati</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════ MAPPA ═══════════════ -->
+<div class="view" id="v-map">
+  <div class="sb dark"></div>
+  <div style="padding:10px 16px;background:#fff;display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--bo);flex-shrink:0">
+    <div style="flex:1;background:var(--lp);border-radius:22px;padding:10px 16px;display:flex;align-items:center;gap:8px">
+      <svg width="18" height="18" style="color:var(--mu);flex-shrink:0"><use href="#ic-search"/></svg>
+      <span style="font-size:15px;color:var(--mu)">Cerca locali vicino a te...</span>
+    </div>
+  </div>
+  <div class="map-bg">
+    <svg class="map-svg" viewBox="0 0 390 340" preserveAspectRatio="xMidYMid slice">
+      <!-- street grid -->
+      <rect fill="#e8f0e8" width="390" height="340"/>
+      <rect fill="#d4e6d4" x="0" y="0" width="390" height="340" opacity=".3"/>
+      <!-- roads -->
+      <path fill="#fff" opacity=".8" d="M0 140h390v8H0zM0 220h390v8H0zM0 80h390v5H0z"/>
+      <path fill="#fff" opacity=".8" d="M120 0v340h8V0zM240 0v340h8V0zM60 0v340h5V0zM310 0v340h5V0z"/>
+      <!-- blocks -->
+      <rect fill="#ddeadd" x="13" y="10" width="100" height="60" rx="4"/>
+      <rect fill="#ddeadd" x="135" y="10" width="95" height="60" rx="4"/>
+      <rect fill="#ddeadd" x="255" y="10" width="48" height="60" rx="4"/>
+      <rect fill="#ddeadd" x="318" y="10" width="65" height="60" rx="4"/>
+      <rect fill="#ddeadd" x="13" y="90" width="48" height="40" rx="4"/>
+      <rect fill="#ddeadd" x="73" y="90" width="40" height="40" rx="4"/>
+      <rect fill="#ddeadd" x="135" y="90" width="95" height="40" rx="4"/>
+      <rect fill="#ddeadd" x="255" y="90" width="120" height="40" rx="4"/>
+      <rect fill="#ddeadd" x="13" y="155" width="100" height="55" rx="4"/>
+      <rect fill="#ddeadd" x="135" y="155" width="95" height="55" rx="4"/>
+      <rect fill="#ddeadd" x="255" y="155" width="120" height="55" rx="4"/>
+      <rect fill="#ddeadd" x="13" y="235" width="100" height="95" rx="4"/>
+      <rect fill="#ddeadd" x="135" y="235" width="95" height="95" rx="4"/>
+      <rect fill="#ddeadd" x="255" y="235" width="120" height="95" rx="4"/>
+      <!-- pin 1 Bistrot Verde -->
+      <g onclick="go('v-venue')" style="cursor:pointer">
+        <circle cx="80" cy="120" r="22" fill="var(--p)" opacity=".15"/>
+        <path d="M80 100 C80 100 64 112 64 122 C64 130.8 71.2 138 80 138 C88.8 138 96 130.8 96 122 C96 112 80 100 80 100Z" fill="var(--p)"/>
+        <circle cx="80" cy="121" r="6" fill="#fff"/>
+        <text x="80" y="154" text-anchor="middle" font-size="10" font-weight="700" fill="#1F1B2E" font-family="system-ui">Bistrot Verde</text>
+      </g>
+      <!-- pin 2 Caffe Roma -->
+      <g onclick="go('v-map')">
+        <path d="M210 60 C210 60 196 70 196 78 C196 85.2 202.3 91 210 91 C217.7 91 224 85.2 224 78 C224 70 210 60 210 60Z" fill="#9B6DC8"/>
+        <circle cx="210" cy="77" r="5" fill="#fff"/>
+        <text x="210" y="103" text-anchor="middle" font-size="10" font-weight="700" fill="#1F1B2E" font-family="system-ui">Caffè Roma</text>
+      </g>
+      <!-- pin 3 Pizzeria Sole -->
+      <g onclick="go('v-map')">
+        <path d="M340 170 C340 170 326 182 326 190 C326 198 332.3 204 340 204 C347.7 204 354 198 354 190 C354 182 340 170 340 170Z" fill="#3B6D11"/>
+        <circle cx="340" cy="189" r="5" fill="#fff"/>
+        <text x="340" y="218" text-anchor="middle" font-size="10" font-weight="700" fill="#1F1B2E" font-family="system-ui">Pizzeria Sole</text>
+      </g>
+      <!-- user dot -->
+      <circle cx="190" cy="190" r="10" fill="var(--p)" opacity=".2"/>
+      <circle cx="190" cy="190" r="6" fill="var(--p)"/>
+      <circle cx="190" cy="190" r="3" fill="#fff"/>
+    </svg>
+    <div style="position:absolute;top:12px;right:12px;background:#fff;border-radius:12px;padding:8px;box-shadow:0 2px 8px rgba(0,0,0,.15);cursor:pointer" onclick="go('v-qr')">
+      <svg width="24" height="24" style="color:var(--p)"><use href="#ic-qr"/></svg>
+    </div>
+    <!-- map sheet -->
+    <div class="map-sheet">
+      <div class="handle"></div>
+      <div class="fs13 fw6 txt-mu mb8">3 locali vicini</div>
+      <div class="venue-row" onclick="go('v-venue')">
+        <div class="venue-ico"><svg><use href="#ic-fork"/></svg></div>
+        <div class="f1">
+          <div class="fs15 fw7 txt-dk">Bistrot Verde</div>
+          <div class="fs13 txt-mu">Ristorante · 120m</div>
+          <div class="row mt8" style="gap:6px"><span class="stars">★★★★★</span><span class="fs13 txt-mu">4.8 (247 verificate)</span><span class="badge ok">✓ Verificato</span></div>
+        </div>
+      </div>
+      <div class="venue-row">
+        <div class="venue-ico"><svg><use href="#ic-coffee"/></svg></div>
+        <div class="f1">
+          <div class="fs15 fw7 txt-dk">Caffè Roma</div>
+          <div class="fs13 txt-mu">Bar · 280m</div>
+          <div class="row mt8" style="gap:6px"><span class="stars">★★★★</span><span class="fs13 txt-mu">4.3 (89 verificate)</span><span class="badge ok">✓ Verificato</span></div>
+        </div>
+      </div>
+      <div class="venue-row" style="border:none">
+        <div class="venue-ico"><svg><use href="#ic-pizza"/></svg></div>
+        <div class="f1">
+          <div class="fs15 fw7 txt-dk">Pizzeria Sole</div>
+          <div class="fs13 txt-mu">Pizzeria · 410m</div>
+          <div class="row mt8" style="gap:6px"><span class="stars">★★★★</span><span class="fs13 txt-mu">4.5 (134 verificate)</span><span class="badge ok">✓ Verificato</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="nav-item on"><svg><use href="#ic-map"/></svg>Mappa</div>
+    <div class="nav-item" onclick="go('v-feed')"><svg><use href="#ic-feed"/></svg>Feed</div>
+    <div class="fab" onclick="go('v-qr')"><svg style="color:var(--p)"><use href="#ic-qr"/></svg></div>
+    <div class="nav-item" onclick="go('v-wallet')"><svg><use href="#ic-wallet"/></svg>Wallet</div>
+    <div class="nav-item" onclick="go('v-profile')"><svg><use href="#ic-user"/></svg>Profilo</div>
+  </nav>
+</div>
+
+<!-- ═══════════════ SCHEDA LOCALE ═══════════════ -->
+<div class="view" id="v-venue">
+  <div style="height:200px;background:var(--lp);position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+    <svg width="80" height="80" style="color:var(--p);opacity:.4"><use href="#ic-fork"/></svg>
+    <div style="position:absolute;top:54px;left:16px;width:36px;height:36px;background:rgba(255,255,255,.9);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="go('v-map')">
+      <svg width="22" height="22" style="color:var(--dk)"><use href="#ic-back"/></svg>
+    </div>
+    <div style="position:absolute;bottom:0;left:0;right:0;height:60px;background:linear-gradient(transparent,rgba(0,0,0,.1))"></div>
+  </div>
+  <div class="scroll">
+    <div class="p16">
+      <div class="fs22 fw7 txt-dk">Bistrot Verde</div>
+      <div class="row mt8 fs13 txt-mu"><svg width="16" height="16"><use href="#ic-map"/></svg>Via della Pace 12, Roma · 120m</div>
+      <div style="display:flex;align-items:center;gap:16px;margin:14px 0">
+        <div><div class="fs32 fw7 txt-dk" style="line-height:1">4.8</div><div class="fs13 txt-mu">/5 · 247 rec.</div></div>
+        <div class="stars" style="font-size:20px">★★★★★</div>
+        <span class="badge ok" style="font-size:12px;padding:5px 12px">✓ 247 certificate</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+        <span style="background:var(--lp);color:var(--p);padding:7px 14px;border-radius:20px;font-size:13px;font-weight:600">Cucina italiana</span>
+        <span style="background:var(--lp);color:var(--p);padding:7px 14px;border-radius:20px;font-size:13px;font-weight:600">Vini</span>
+        <span style="background:var(--lp);color:var(--p);padding:7px 14px;border-radius:20px;font-size:13px;font-weight:600">Romantico</span>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:20px">
+        <button class="btn btn-s" style="font-size:14px;padding:10px"><svg width="18" height="18"><use href="#ic-phone"/></svg>Chiama</button>
+        <button class="btn btn-s" style="font-size:14px;padding:10px"><svg width="18" height="18"><use href="#ic-nav"/></svg>Vai</button>
+        <button class="btn btn-s" style="font-size:14px;padding:10px"><svg width="18" height="18"><use href="#ic-save"/></svg>Salva</button>
+      </div>
+      <div class="fs15 fw7 txt-dk mb12">Recensioni verificate</div>
+      <div style="padding:14px 0;border-bottom:1px solid var(--bo)">
+        <div class="row mb8">
+          <div class="av">MR</div>
+          <div class="f1"><div class="fs14 fw6 txt-dk">Marco R.</div></div>
+          <span class="badge qr"><svg width="12" height="12"><use href="#ic-qr"/></svg>QR</span>
+        </div>
+        <div class="stars mb8">★★★★★</div>
+        <div class="fs14 txt-dk" style="line-height:1.6">Cena fantastica, la pasta al tartufo era eccellente. Servizio impeccabile e ambiente molto curato.</div>
+      </div>
+      <div style="padding:14px 0;border-bottom:1px solid var(--bo)">
+        <div class="row mb8">
+          <div class="av" style="background:#DDD4F5">SF</div>
+          <div class="f1"><div class="fs14 fw6 txt-dk">Sofia F.</div></div>
+          <span class="badge ok"><svg width="12" height="12"><use href="#ic-map"/></svg>GPS</span>
+        </div>
+        <div class="stars mb8">★★★★</div>
+        <div class="fs14 txt-dk" style="line-height:1.6">Ottimo rapporto qualità-prezzo. Un po' rumoroso il sabato sera, ma il cibo compensa tutto.</div>
+      </div>
+    </div>
+    <div class="p16" style="padding-top:0">
+      <button class="btn btn-p" onclick="go('v-checkin')">Sei qui? Lascia la tua recensione</button>
+      <div style="height:30px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ CHECK-IN ═══════════════ -->
+<div class="view" id="v-checkin" style="background:#fff;align-items:center;justify-content:center">
+  <div class="sb green" style="position:absolute;top:0;left:0;right:0"></div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:20px;padding:30px;text-align:center;margin-top:52px">
+    <div class="ci-ring">
+      <svg width="56" height="56" style="color:var(--ok)"><use href="#ic-check"/></svg>
+    </div>
+    <div class="fs22 fw7 txt-dk">Visita verificata!</div>
+    <div style="background:var(--lp);border-radius:16px;padding:16px 20px;width:100%">
+      <div class="fs16 fw7 txt-p">Bistrot Verde</div>
+      <div class="fs13 txt-mu mt8">Presenza confermata tramite geolocalizzazione</div>
+      <div class="fs13 txt-p fw6 mt8">Hai 48 ore per scrivere la tua recensione</div>
+    </div>
+    <div class="fs14 txt-mu" style="line-height:1.6">Guadagnerai <strong style="color:var(--p)">+20 TruePoints</strong> pubblicando la tua recensione verificata.</div>
+    <button class="btn btn-p" onclick="go('v-review')">Scrivi recensione</button>
+    <button class="btn btn-s" onclick="go('v-map')">Più tardi</button>
+  </div>
+</div>
+
+<!-- ═══════════════ QR SCANNER ═══════════════ -->
+<div class="view" id="v-qr" style="background:#111">
+  <div class="sb dark" style="background:#111"></div>
+  <div class="hdr" style="background:#1a1a1a">
+    <svg onclick="go('v-map')" width="24" height="24" style="cursor:pointer;color:#fff"><use href="#ic-back"/></svg>
+    <h1 style="color:#fff">Scansiona QR</h1>
+    <svg width="24" height="24" style="color:var(--y)"><path d="M13 2L13 8L19 8" stroke="currentColor" stroke-width="2" fill="none"/><path d="M19 2L13 8" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+  </div>
+  <div class="qr-wrap">
+    <div class="qr-tip">Inquadra il <strong>QR del locale</strong><br>o dello scontrino</div>
+    <div class="qr-frame">
+      <div class="qr-corner tl"></div><div class="qr-corner tr"></div>
+      <div class="qr-corner bl"></div><div class="qr-corner br"></div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+        <div style="width:140px;height:140px;background:#222;border-radius:12px;display:grid;grid-template-columns:repeat(7,1fr);gap:3px;padding:10px">
+          <div style="background:var(--y);border-radius:2px;grid-column:span 3;grid-row:span 3"></div>
+          <div style="background:#333;border-radius:2px"></div>
+          <div style="background:var(--y);border-radius:2px"></div>
+          <div style="background:#333;border-radius:2px"></div>
+          <div style="background:var(--y);border-radius:2px"></div>
+        </div>
+        <div class="scan-line"></div>
+      </div>
+    </div>
+    <div class="qr-tip" style="font-size:13px">oppure <strong style="color:var(--y);cursor:pointer" onclick="go('v-checkin')">inserisci codice</strong></div>
+    <button class="btn btn-y" style="width:80%;font-size:16px" onclick="go('v-checkin')">Simula scansione ✓</button>
+  </div>
+</div>
+
+<!-- ═══════════════ SCRIVI RECENSIONE ═══════════════ -->
+<div class="view" id="v-review">
+  <div class="sb dark"></div>
+  <div class="hdr">
+    <svg onclick="go('v-map')" width="24" height="24" style="cursor:pointer;color:#fff"><use href="#ic-back"/></svg>
+    <h1>La tua recensione</h1>
+    <span style="background:rgba(255,255,255,.2);padding:6px 14px;border-radius:20px;font-size:14px;font-weight:700;cursor:pointer" onclick="go('v-map')">Pubblica</span>
+  </div>
+  <div style="background:var(--lp);padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <div class="venue-ico" style="width:40px;height:40px"><svg width="22" height="22"><use href="#ic-fork"/></svg></div>
+    <div><div class="fs14 fw7 txt-dk">Bistrot Verde</div><span class="badge ok fs13 mt8">✓ Visita verificata GPS</span></div>
+  </div>
+  <div class="scroll">
+    <div class="p16">
+      <div class="fs15 fw7 txt-dk center mb8">Valutazione complessiva</div>
+      <div id="star-row" style="display:flex;justify-content:center;gap:8px;margin-bottom:20px">
+        <span class="stars lg" style="color:#ddd" onclick="setStar(1)">★</span>
+        <span class="stars lg" style="color:#ddd" onclick="setStar(2)">★</span>
+        <span class="stars lg" onclick="setStar(3)">★</span>
+        <span class="stars lg" onclick="setStar(4)">★</span>
+        <span class="stars lg" onclick="setStar(5)">★</span>
+      </div>
+      <div class="fs14 fw7 txt-dk mb8">Descrivi la tua esperienza</div>
+      <textarea style="width:100%;border:2px solid var(--bo);border-radius:14px;padding:14px;font-size:15px;min-height:110px;resize:none;font-family:inherit;color:var(--dk)" placeholder="Com'è stato? Cosa hai ordinato? Lo consiglieresti?"></textarea>
+      <div class="fs14 fw7 txt-dk mt16 mb8">Tag esperienza</div>
+      <div id="chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+        <span class="chip on" onclick="toggleChip(this)">Ottimo cibo</span>
+        <span class="chip on" onclick="toggleChip(this)">Servizio curato</span>
+        <span class="chip" onclick="toggleChip(this)">Romantico</span>
+        <span class="chip" onclick="toggleChip(this)">Buon prezzo</span>
+        <span class="chip" onclick="toggleChip(this)">Tornerò</span>
+        <span class="chip" onclick="toggleChip(this)">Atmosfera</span>
+      </div>
+      <div class="fs14 fw7 txt-dk mb8">Aggiungi foto</div>
+      <div style="display:flex;gap:10px;margin-bottom:20px">
+        <div style="width:72px;height:72px;border-radius:14px;border:2px dashed #C0B8E0;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" style="color:#C0B8E0"><use href="#ic-photo"/></svg></div>
+        <div style="width:72px;height:72px;border-radius:14px;background:var(--lp);display:flex;align-items:center;justify-content:center"><svg width="28" height="28" style="color:var(--p);opacity:.5"><use href="#ic-fork"/></svg></div>
+      </div>
+      <div style="background:var(--lp);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:80px">
+        <svg width="28" height="28" style="color:var(--y);flex-shrink:0"><use href="#ic-trophy"/></svg>
+        <div class="fs14"><strong class="txt-p">+20 TruePoints</strong> per questa recensione verificata</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ FEED ═══════════════ -->
+<div class="view" id="v-feed">
+  <div class="sb dark"></div>
+  <div class="hdr">
+    <div style="width:32px;height:32px;background:var(--y);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:var(--p)">tt</div>
+    <h1>Feed</h1>
+    <svg width="24" height="24" style="cursor:pointer"><use href="#ic-bell"/></svg>
+  </div>
+  <div style="display:flex;background:#fff;border-bottom:1px solid var(--bo);flex-shrink:0">
+    <div style="flex:1;padding:12px;text-align:center;font-size:14px;font-weight:700;color:var(--p);border-bottom:3px solid var(--p);cursor:pointer">Per te</div>
+    <div style="flex:1;padding:12px;text-align:center;font-size:14px;color:var(--mu);cursor:pointer">Amici</div>
+    <div style="flex:1;padding:12px;text-align:center;font-size:14px;color:var(--mu);cursor:pointer">Solo QR</div>
+  </div>
+  <div class="scroll">
+    <div class="card" onclick="go('v-venue')" style="cursor:pointer">
+      <div class="row p16" style="border-bottom:1px solid #F5F3FF">
+        <div class="av">MR</div>
+        <div class="f1"><div class="fs14 fw6 txt-dk">Marco Rossi</div><div class="fs13 txt-p">Bistrot Verde</div></div>
+        <span class="badge qr"><svg width="12" height="12"><use href="#ic-qr"/></svg>QR</span>
+      </div>
+      <div class="feed-img"><svg><use href="#ic-fork"/></svg></div>
+      <div class="p16">
+        <div class="row mb8"><span class="stars">★★★★★</span><span class="fs13 txt-mu" style="margin-left:6px">5.0 · ieri sera</span></div>
+        <div class="fs14 txt-dk" style="line-height:1.6">Cena indimenticabile. La pasta al tartufo nero era straordinaria. Tornerò sicuramente!</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
+          <span style="background:var(--lp);color:var(--p);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600">Ottimo cibo</span>
+          <span style="background:var(--lp);color:var(--p);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600">Romantico</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:20px;padding:10px 16px;border-top:1px solid #F5F5F5">
+        <div class="row fs13 txt-mu" style="gap:6px;cursor:pointer"><svg width="20" height="20" style="color:var(--red)"><use href="#ic-heart"/></svg>24</div>
+        <div class="row fs13 txt-mu" style="gap:6px;cursor:pointer"><svg width="20" height="20"><use href="#ic-msg"/></svg>3</div>
+        <div class="row fs13 txt-mu" style="gap:6px;cursor:pointer"><svg width="20" height="20"><use href="#ic-save"/></svg>Salva</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row p16" style="border-bottom:1px solid #F5F3FF">
+        <div class="av" style="background:#DDD4F5">SF</div>
+        <div class="f1"><div class="fs14 fw6 txt-dk">Sofia Ferrari</div><div class="fs13 txt-p">Caffè Roma</div></div>
+        <span class="badge ok"><svg width="12" height="12"><use href="#ic-map"/></svg>GPS</span>
+      </div>
+      <div class="feed-img" style="background:#E3F2FD"><svg style="color:#185FA5"><use href="#ic-coffee"/></svg></div>
+      <div class="p16">
+        <div class="row mb8"><span class="stars">★★★★</span><span class="fs13 txt-mu" style="margin-left:6px">4.0 · 2 giorni fa</span></div>
+        <div class="fs14 txt-dk" style="line-height:1.6">Cappuccino perfetto e cornetto fragrante. Ideale per la colazione di lavoro.</div>
+      </div>
+      <div style="display:flex;gap:20px;padding:10px 16px;border-top:1px solid #F5F5F5;margin-bottom:10px">
+        <div class="row fs13 txt-mu" style="gap:6px"><svg width="20" height="20"><use href="#ic-heart"/></svg>11</div>
+        <div class="row fs13 txt-mu" style="gap:6px"><svg width="20" height="20"><use href="#ic-msg"/></svg>1</div>
+        <div class="row fs13 txt-mu" style="gap:6px"><svg width="20" height="20"><use href="#ic-save"/></svg>Salva</div>
+      </div>
+    </div>
+    <div style="height:80px"></div>
+  </div>
+  <nav class="nav">
+    <div class="nav-item" onclick="go('v-map')"><svg><use href="#ic-map"/></svg>Mappa</div>
+    <div class="nav-item on"><svg><use href="#ic-feed"/></svg>Feed</div>
+    <div class="fab" onclick="go('v-qr')"><svg style="color:var(--p)"><use href="#ic-qr"/></svg></div>
+    <div class="nav-item" onclick="go('v-wallet')"><svg><use href="#ic-wallet"/></svg>Wallet</div>
+    <div class="nav-item" onclick="go('v-profile')"><svg><use href="#ic-user"/></svg>Profilo</div>
+  </nav>
+</div>
+
+<!-- ═══════════════ WALLET ═══════════════ -->
+<div class="view" id="v-wallet">
+  <div class="sb dark"></div>
+  <div class="wallet-hero">
+    <div class="fs14" style="opacity:.8;margin-bottom:4px">I tuoi TruePoints</div>
+    <div style="font-size:44px;font-weight:800;color:var(--y);line-height:1">1.240 <span style="font-size:18px;color:rgba(255,255,255,.7);font-weight:400">punti</span></div>
+    <div class="progress mt12"><div class="prog-fill" style="width:62%"></div></div>
+    <div class="row mt8 fs13" style="justify-content:space-between;opacity:.7"><span>Livello 3</span><span>380 pt al livello 4</span></div>
+  </div>
+  <div class="scroll">
+    <div class="section-ttl">Premi disponibili</div>
+    <div class="reward-row">
+      <div class="reward-ico"><svg><use href="#ic-discount"/></svg></div>
+      <div class="f1"><div class="fs15 fw6 txt-dk">€5 sconto al Bistrot Verde</div><div class="fs13 txt-mu mt8">500 TruePoints</div></div>
+      <button style="background:var(--p);color:#fff;border:none;border-radius:20px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer">Riscatta</button>
+    </div>
+    <div class="reward-row">
+      <div class="reward-ico"><svg><use href="#ic-coffee"/></svg></div>
+      <div class="f1"><div class="fs15 fw6 txt-dk">Caffè gratis da Caffè Roma</div><div class="fs13 txt-mu mt8">200 TruePoints</div></div>
+      <button style="background:var(--p);color:#fff;border:none;border-radius:20px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer">Riscatta</button>
+    </div>
+    <div class="reward-row">
+      <div class="reward-ico"><svg><use href="#ic-gift"/></svg></div>
+      <div class="f1"><div class="fs15 fw6 txt-dk">Gift card Amazon €10</div><div class="fs13 txt-mu mt8">1.000 TruePoints</div></div>
+      <button style="background:var(--p);color:#fff;border:none;border-radius:20px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer">Riscatta</button>
+    </div>
+    <div class="reward-row" style="opacity:.45">
+      <div class="reward-ico"><svg><use href="#ic-star"/></svg></div>
+      <div class="f1"><div class="fs15 fw6 txt-dk">Cena per 2 — Bistrot Verde</div><div class="fs13 txt-mu mt8">2.500 TruePoints</div></div>
+      <button style="background:#ccc;color:#fff;border:none;border-radius:20px;padding:8px 16px;font-size:13px;font-weight:700">Bloccato</button>
+    </div>
+    <div class="section-ttl">Storico</div>
+    <div class="reward-row fs14"><span class="f1 txt-dk">Recensione Bistrot Verde</span><span class="txt-ok fw6">+20 pt</span></div>
+    <div class="reward-row fs14"><span class="f1 txt-dk">Recensione Caffè Roma</span><span class="txt-ok fw6">+20 pt</span></div>
+    <div class="reward-row fs14" style="border:none"><span class="f1 txt-dk">Badge Explorer</span><span class="txt-ok fw6">+50 pt</span></div>
+    <div style="height:80px"></div>
+  </div>
+  <nav class="nav">
+    <div class="nav-item" onclick="go('v-map')"><svg><use href="#ic-map"/></svg>Mappa</div>
+    <div class="nav-item" onclick="go('v-feed')"><svg><use href="#ic-feed"/></svg>Feed</div>
+    <div class="fab" onclick="go('v-qr')"><svg style="color:var(--p)"><use href="#ic-qr"/></svg></div>
+    <div class="nav-item on"><svg><use href="#ic-wallet"/></svg>Wallet</div>
+    <div class="nav-item" onclick="go('v-profile')"><svg><use href="#ic-user"/></svg>Profilo</div>
+  </nav>
+</div>
+
+<!-- ═══════════════ PROFILO ═══════════════ -->
+<div class="view" id="v-profile">
+  <div class="sb dark"></div>
+  <div class="scroll">
+    <div class="prof-hero">
+      <div class="prof-av">T</div>
+      <div class="fs18 fw7">Tommaso R.</div>
+      <div class="fs14 mt8" style="opacity:.7">@tommaso_truetips</div>
+      <div style="background:rgba(245,197,24,.2);border:1px solid var(--y);border-radius:20px;padding:5px 16px;font-size:13px;font-weight:700;color:var(--y);display:inline-block;margin-top:10px">⭐ Livello 3 — Explorer</div>
+      <div class="stat-row">
+        <div><div class="stat-n">34</div><div class="stat-l">Recensioni</div></div>
+        <div><div class="stat-n">128</div><div class="stat-l">Follower</div></div>
+        <div><div class="stat-n">67</div><div class="stat-l">Following</div></div>
+        <div><div class="stat-n">1.240</div><div class="stat-l">Points</div></div>
+      </div>
+    </div>
+    <div class="ptab-bar">
+      <div class="ptab on" id="ptab0" onclick="showPTab(0)">Recensioni</div>
+      <div class="ptab" id="ptab1" onclick="showPTab(1)">Foto</div>
+      <div class="ptab" id="ptab2" onclick="showPTab(2)">Badge</div>
+    </div>
+    <div id="ptab-content">
+      <div id="ptc0">
+        <div class="reward-row" onclick="go('v-venue')" style="cursor:pointer">
+          <div class="reward-ico"><svg><use href="#ic-fork"/></svg></div>
+          <div class="f1"><div class="fs14 fw6 txt-dk">Bistrot Verde</div><div class="row mt8" style="gap:6px"><span class="stars">★★★★★</span><span class="badge qr fs13" style="margin-left:4px">QR</span></div></div>
+          <div class="fs13 txt-mu">ieri</div>
+        </div>
+        <div class="reward-row">
+          <div class="reward-ico"><svg><use href="#ic-coffee"/></svg></div>
+          <div class="f1"><div class="fs14 fw6 txt-dk">Caffè Roma</div><div class="row mt8" style="gap:6px"><span class="stars">★★★★</span><span class="badge ok fs13" style="margin-left:4px">GPS</span></div></div>
+          <div class="fs13 txt-mu">3gg fa</div>
+        </div>
+        <div class="reward-row" style="border:none">
+          <div class="reward-ico"><svg><use href="#ic-pizza"/></svg></div>
+          <div class="f1"><div class="fs14 fw6 txt-dk">Pizzeria Sole</div><div class="row mt8" style="gap:6px"><span class="stars">★★★★★</span><span class="badge ok fs13" style="margin-left:4px">GPS</span></div></div>
+          <div class="fs13 txt-mu">1w fa</div>
+        </div>
+      </div>
+      <div id="ptc1" style="display:none">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px">
+          <div style="aspect-ratio:1;background:var(--lp);display:flex;align-items:center;justify-content:center"><svg width="40" height="40" style="color:var(--p);opacity:.4"><use href="#ic-fork"/></svg></div>
+          <div style="aspect-ratio:1;background:#E3F2FD;display:flex;align-items:center;justify-content:center"><svg width="40" height="40" style="color:#185FA5;opacity:.4"><use href="#ic-coffee"/></svg></div>
+          <div style="aspect-ratio:1;background:#E8F5E9;display:flex;align-items:center;justify-content:center"><svg width="40" height="40" style="color:#2E7D32;opacity:.4"><use href="#ic-pizza"/></svg></div>
+        </div>
+      </div>
+      <div id="ptc2" style="display:none">
+        <div class="badge-grid">
+          <div class="badge-item"><div class="badge-circle" style="background:var(--lp)"><svg width="28" height="28" style="color:var(--p)"><use href="#ic-map"/></svg></div><div class="badge-nm">Explorer</div></div>
+          <div class="badge-item"><div class="badge-circle" style="background:var(--okbg)"><svg width="28" height="28" style="color:var(--ok)"><use href="#ic-qr"/></svg></div><div class="badge-nm">QR Master</div></div>
+          <div class="badge-item"><div class="badge-circle" style="background:#FFF8E1"><svg width="28" height="28" style="color:#BA7517"><use href="#ic-star"/></svg></div><div class="badge-nm">Top Reviewer</div></div>
+          <div class="badge-item"><div class="badge-circle" style="background:#E3F2FD"><svg width="28" height="28" style="color:#185FA5"><use href="#ic-shield"/></svg></div><div class="badge-nm">Verificato Pro</div></div>
+          <div class="badge-item"><div class="badge-circle" style="background:#FFF0F0"><svg width="28" height="28" style="color:#E24B4A"><use href="#ic-fork"/></svg></div><div class="badge-nm">Foodie</div></div>
+          <div class="badge-item" style="opacity:.35"><div class="badge-circle" style="background:#F5F5F5"><svg width="28" height="28" style="color:#ccc"><use href="#ic-trophy"/></svg></div><div class="badge-nm">Bloccato</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="height:80px"></div>
+  </div>
+  <nav class="nav">
+    <div class="nav-item" onclick="go('v-map')"><svg><use href="#ic-map"/></svg>Mappa</div>
+    <div class="nav-item" onclick="go('v-feed')"><svg><use href="#ic-feed"/></svg>Feed</div>
+    <div class="fab" onclick="go('v-qr')"><svg style="color:var(--p)"><use href="#ic-qr"/></svg></div>
+    <div class="nav-item" onclick="go('v-wallet')"><svg><use href="#ic-wallet"/></svg>Wallet</div>
+    <div class="nav-item on"><svg><use href="#ic-user"/></svg>Profilo</div>
+  </nav>
+</div>
+
+</div></div></div>
+
+<script>
+var obIdx=0,obSlides,obDots;
+function go(id){
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('on')});
+  var el=document.getElementById(id);
+  if(el)el.classList.add('on');
+}
+function nextOb(){
+  if(!obSlides)obSlides=document.querySelectorAll('.ob-sl');
+  if(!obDots)obDots=document.querySelectorAll('.od');
+  obSlides[obIdx].style.opacity='0';
+  obDots[obIdx].classList.remove('on');
+  obIdx++;
+  if(obIdx>=obSlides.length){go('v-login');return}
+  obSlides[obIdx].style.opacity='1';
+  obDots[obIdx].classList.add('on');
+  if(obIdx===obSlides.length-1)document.getElementById('ob-next').textContent='Inizia';
+}
+function setStar(n){
+  document.querySelectorAll('#star-row .stars').forEach(function(s,i){
+    s.style.color=i<n?'var(--y)':'#ddd';
+  });
+}
+function toggleChip(el){el.classList.toggle('on')}
+function showPTab(n){
+  [0,1,2].forEach(function(i){
+    document.getElementById('ptab'+i).classList.toggle('on',i===n);
+    document.getElementById('ptc'+i).style.display=i===n?'block':'none';
+  });
+}
+setTimeout(function(){go('v-onb')},2000);
+document.getElementById('v-splash').addEventListener('touchstart',function(){go('v-onb')},{once:true});
+</script>
+</div></div></div>
+</body>
+</html>
